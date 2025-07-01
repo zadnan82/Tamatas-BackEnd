@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15
+    container_name: fresh_trade_db
+    environment:
+      POSTGRES_DB: fresh_trade
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: fresh_trade_redis
+    ports:
+      - "6379:6379"
+
+  app:
+    build: .
+    container_name: fresh_trade_app
+    ports:
+      - "8001:8000"  # Using port 8001 to avoid conflicts
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/fresh_trade
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: your-super-secret-key-change-this-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    volumes:
+      - ./uploads:/app/uploads
+
+  celery:
+    build: .
+    container_name: fresh_trade_celery
+    # Fixed command - use the correct module path
+    command: celery -A app.celery_app.celery_app worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/fresh_trade
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: your-super-secret-key-change-this-in-production
+
+volumes:
+  postgres_data:
+ 
