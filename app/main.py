@@ -16,6 +16,10 @@ from app.routers import (
     upload,
     contact,
 )
+import app.routers.messages
+
+print("✅ Manually imported messages router:", app.routers.messages.router)
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -30,12 +34,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
         "http://localhost:5173",
-    ],  # Add your frontend URLs
+        "http://127.0.0.1:5173",
+        # Add any other origins you need
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],  # Allow all methods including OPTIONS
     allow_headers=["*"],
+    expose_headers=["*"],  # Important for some responses
 )
 
 
@@ -75,3 +81,18 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500, content={"detail": f"Internal server error: {str(exc)}"}
     )
+
+
+# Safe route debugging (add this instead of your current print loop)
+@app.on_event("startup")
+async def print_routes():
+    from fastapi.routing import APIRoute
+
+    print("\n=== REGISTERED API ROUTES ===")
+    for route in app.routes:
+        if hasattr(route, "path"):
+            if hasattr(route, "methods"):
+                print(f"{route.path} - {route.methods}")
+            else:
+                print(f"{route.path} - (Static/Mount)")
+    print("============================\n")

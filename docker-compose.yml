@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:15
@@ -21,7 +23,7 @@ services:
     build: .
     container_name: fresh_trade_app
     ports:
-      - "8001:8000"  # Using port 8001 to avoid conflicts
+      - "8001:8001"  # Changed to use 8001 externally and internally
     depends_on:
       - db
       - redis
@@ -33,12 +35,13 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
     volumes:
       - ./uploads:/app/uploads
+      - .:/app  # For development with hot-reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
   celery:
     build: .
     container_name: fresh_trade_celery
-    # Fixed command - use the correct module path
-    command: celery -A app.celery_app.celery_app worker --loglevel=info
+    command: celery -A app.celery_app worker --loglevel=info  # Updated to match your actual celery app location
     depends_on:
       - db
       - redis
@@ -49,4 +52,3 @@ services:
 
 volumes:
   postgres_data:
- 
