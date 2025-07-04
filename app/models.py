@@ -1,3 +1,5 @@
+# app/models.py - COMPLETE FILE - Fresh Trade v2.0 with Location & Contact Features
+
 from sqlalchemy import (
     Column,
     Index,
@@ -16,10 +18,13 @@ from sqlalchemy.sql import func
 from app.database import Base
 import enum
 
+# ==================== ENUMS ====================
+
 
 class ListingType(str, enum.Enum):
     for_sale = "for_sale"
     looking_for = "looking_for"
+    give_away = "give_away"  # NEW: Free produce sharing
 
 
 class ListingStatus(str, enum.Enum):
@@ -62,9 +67,20 @@ class ForumCategory(str, enum.Enum):
     site_feedback = "site_feedback"
 
 
+# NEW: Contact preference enum
+class ContactPreference(str, enum.Enum):
+    messages_only = "messages_only"
+    whatsapp_only = "whatsapp_only"
+    both = "both"
+
+
+# ==================== MODELS ====================
+
+
 class User(Base):
     __tablename__ = "users"
 
+    # Basic user fields
     id = Column(String, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String, nullable=True)
@@ -76,6 +92,20 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_date = Column(DateTime(timezone=True), server_default=func.now())
     updated_date = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # NEW: Location fields - MANDATORY for creating listings
+    location = Column(
+        JSON, nullable=True
+    )  # {country, city, state, area, formatted_address}
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    location_precision = Column(String, default="city")  # "city" or "neighborhood"
+    search_radius = Column(Integer, default=25)  # Default search radius in miles
+
+    # NEW: Contact preference fields
+    whatsapp_number = Column(String, nullable=True)
+    contact_preference = Column(Enum(ContactPreference), default=ContactPreference.both)
+    show_whatsapp_on_listings = Column(Boolean, default=False)
 
     # Relationships
     listings = relationship("Listing", back_populates="owner")
@@ -104,8 +134,8 @@ class Listing(Base):
     description = Column(Text, nullable=True)
     category = Column(String, nullable=False)
     subcategory = Column(String, nullable=True)
-    listing_type = Column(Enum(ListingType), nullable=False)
-    price = Column(Float, nullable=True)
+    listing_type = Column(Enum(ListingType), nullable=False)  # Updated with give_away
+    price = Column(Float, nullable=True)  # NOW OPTIONAL for give_away listings
     price_unit = Column(Enum(PriceUnit), default=PriceUnit.per_lb)
     quantity_available = Column(String, nullable=True)
     trade_preference = Column(Enum(TradePreference), default=TradePreference.both)
@@ -113,7 +143,9 @@ class Listing(Base):
     status = Column(Enum(ListingStatus), default=ListingStatus.active)
     harvest_date = Column(DateTime, nullable=True)
     organic = Column(Boolean, default=False)
-    location = Column(JSON, nullable=True)  # {city, state, latitude, longitude}
+    location = Column(
+        JSON, nullable=False
+    )  # MANDATORY - {city, state, latitude, longitude}
     view_count = Column(Integer, default=0)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     created_date = Column(DateTime(timezone=True), server_default=func.now())
