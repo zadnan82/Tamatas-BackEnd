@@ -1,5 +1,6 @@
 from sqlalchemy import (
     Column,
+    Index,
     Integer,
     String,
     Text,
@@ -219,3 +220,35 @@ class ForumPost(Base):
     topic = relationship("ForumTopic", back_populates="posts")
     author = relationship("User", back_populates="forum_posts")
     replies = relationship("ForumPost", remote_side=[id])
+
+
+class ForumTopicLike(Base):
+    __tablename__ = "forum_topic_likes"
+
+    id = Column(String, primary_key=True, index=True)
+    topic_id = Column(String, ForeignKey("forum_topics.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    topic = relationship("ForumTopic")
+    user = relationship("User")
+
+    # Ensure one like per user per topic
+    __table_args__ = (Index("ix_topic_user_like", "topic_id", "user_id", unique=True),)
+
+
+class ForumPostLike(Base):
+    __tablename__ = "forum_post_likes"
+
+    id = Column(String, primary_key=True, index=True)
+    post_id = Column(String, ForeignKey("forum_posts.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    post = relationship("ForumPost")
+    user = relationship("User")
+
+    # Ensure one like per user per post
+    __table_args__ = (Index("ix_post_user_like", "post_id", "user_id", unique=True),)

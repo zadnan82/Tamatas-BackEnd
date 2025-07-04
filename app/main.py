@@ -16,10 +16,8 @@ from app.routers import (
     upload,
     contact,
 )
-import app.routers.messages
 
-print("✅ Manually imported messages router:", app.routers.messages.router)
-
+print("✅ All routers imported successfully")
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -44,21 +42,65 @@ app.add_middleware(
     expose_headers=["*"],  # Important for some responses
 )
 
-
 # Serve uploaded files
 if os.path.exists("uploads"):
     app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# Include routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(listings.router)
-app.include_router(messages.router)
-app.include_router(reviews.router)
-app.include_router(favorites.router)
-app.include_router(forum.router)
-app.include_router(upload.router)
-app.include_router(contact.router)
+# Include routers - FIXED: Use the correct router attributes
+try:
+    app.include_router(auth.router)
+    print("✅ Auth router included")
+except AttributeError as e:
+    print(f"❌ Error including auth router: {e}")
+    print("Available attributes in auth module:", dir(auth))
+
+try:
+    app.include_router(users.router)
+    print("✅ Users router included")
+except AttributeError as e:
+    print(f"❌ Error including users router: {e}")
+
+try:
+    app.include_router(listings.router)
+    print("✅ Listings router included")
+except AttributeError as e:
+    print(f"❌ Error including listings router: {e}")
+
+try:
+    app.include_router(messages.router)
+    print("✅ Messages router included")
+except AttributeError as e:
+    print(f"❌ Error including messages router: {e}")
+
+try:
+    app.include_router(reviews.router)
+    print("✅ Reviews router included")
+except AttributeError as e:
+    print(f"❌ Error including reviews router: {e}")
+
+try:
+    app.include_router(favorites.router)
+    print("✅ Favorites router included")
+except AttributeError as e:
+    print(f"❌ Error including favorites router: {e}")
+
+try:
+    app.include_router(forum.router)
+    print("✅ Forum router included")
+except AttributeError as e:
+    print(f"❌ Error including forum router: {e}")
+
+try:
+    app.include_router(upload.router)
+    print("✅ Upload router included")
+except AttributeError as e:
+    print(f"❌ Error including upload router: {e}")
+
+try:
+    app.include_router(contact.router)
+    print("✅ Contact router included")
+except AttributeError as e:
+    print(f"❌ Error including contact router: {e}")
 
 
 @app.get("/")
@@ -83,7 +125,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Safe route debugging (add this instead of your current print loop)
+# Safe route debugging
 @app.on_event("startup")
 async def print_routes():
     from fastapi.routing import APIRoute

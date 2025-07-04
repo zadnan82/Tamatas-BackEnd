@@ -207,6 +207,8 @@ class ForumPost(ForumPostBase):
     created_by: str
     created_date: datetime
     author: User
+    like_count: Optional[int] = 0  # ADD THIS LINE
+    user_liked: Optional[bool] = False  # ADD THIS LINE
 
     class Config:
         from_attributes = True
@@ -234,3 +236,19 @@ class ContactForm(BaseModel):
     email: EmailStr
     subject: str
     message: str
+
+
+class ForumTopic(ForumTopicBase):
+    id: str
+    is_pinned: bool
+    is_locked: bool
+    view_count: int
+    created_by: str
+    created_date: datetime
+    creator: User
+    post_count: Optional[int] = 0
+    like_count: Optional[int] = 0  # ADD THIS LINE
+    user_liked: Optional[bool] = False  # ADD THIS LINE
+
+    class Config:
+        from_attributes = True

@@ -1,3 +1,4 @@
+# app/routers/auth.py - Make sure it exports router properly
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -14,7 +15,10 @@ from app.auth import (
 from app.utils import generate_id
 from app.config import settings
 
+# IMPORTANT: Make sure this router variable exists and is exported
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+print("✅ Auth router created")
 
 
 @router.post("/register", response_model=UserSchema)
@@ -40,6 +44,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
 
+    print(f"✅ User registered: {db_user.email}")
     return db_user
 
 
@@ -59,9 +64,18 @@ def login(
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
+
+    print(f"✅ User logged in: {user.email}")
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/me", response_model=UserSchema)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
+    print(f"✅ /auth/me called for user: {current_user.email}")
     return current_user
+
+
+# IMPORTANT: Make sure this line is at the end of the file
+print(
+    f"✅ Auth router configured with routes: {[route.path for route in router.routes]}"
+)
