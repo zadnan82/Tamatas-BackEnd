@@ -1,6 +1,6 @@
 # UPDATE app/schemas.py - Complete updated schemas
 
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.models import (
@@ -193,16 +193,16 @@ class Message(MessageBase):
         from_attributes = True
 
 
-# Review Schemas (unchanged)
 class ReviewBase(BaseModel):
     reviewed_user_id: str
     listing_id: Optional[str] = None
-    rating: int
+    rating: int = Field(..., ge=1, le=5)
     comment: Optional[str] = None
     trade_type: Optional[TradeType] = None
-    product_quality: Optional[int] = None
-    communication: Optional[int] = None
-    delivery: Optional[int] = None
+    product_quality: Optional[int] = Field(None, ge=1, le=5)
+    communication: Optional[int] = Field(None, ge=1, le=5)
+    delivery: Optional[int] = Field(None, ge=1, le=5)
+    is_anonymous: bool = False  # NEW: Add this field
 
 
 class ReviewCreate(ReviewBase):
@@ -211,13 +211,11 @@ class ReviewCreate(ReviewBase):
 
 class Review(ReviewBase):
     id: str
-    reviewer_id: str
     created_date: datetime
-    reviewer: User
-    reviewed_user: User
+    reviewer: Optional[User] = None  # Will be None for anonymous reviews
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 # Favorite Schemas (unchanged)

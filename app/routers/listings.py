@@ -139,6 +139,7 @@ def get_listings(
     organic_only: bool = False,
     near_me: bool = False,
     radius: int = Query(25, ge=1, le=200),
+    created_by: Optional[str] = None,
     sort_by: str = Query(
         "created_date", regex="^(created_date|price|view_count|distance)$"
     ),
@@ -146,11 +147,14 @@ def get_listings(
     current_user: Optional[User] = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    """Enhanced listing search with location filtering"""
+    """Enhanced listing search with FIXED case-insensitive search"""
     try:
         # Start with active listings only
         query = db.query(Listing).filter(Listing.status == "active")
         query = query.join(User, Listing.created_by == User.id)
+
+        if created_by:
+            query = query.filter(Listing.created_by == created_by)
 
         # Apply basic filters
         if category and category != "all":
@@ -159,32 +163,41 @@ def get_listings(
         if listing_type and listing_type != "all":
             query = query.filter(Listing.listing_type == listing_type)
 
+        # FIXED: Case-insensitive search that actually works
         if search:
+            # Convert search to lowercase and search in title AND description
+            search_term = f"%{search.lower()}%"
             search_filter = or_(
-                Listing.title.ilike(f"%{search}%"),
-                Listing.description.ilike(f"%{search}%"),
+                func.lower(Listing.title).like(search_term),
+                func.lower(Listing.description).like(search_term),
             )
             query = query.filter(search_filter)
+            print(f"🔍 Searching for: '{search}' -> SQL pattern: '{search_term}'")
 
+        # FIXED: Better location search
+        # Replace the current location filter with this improved version:
         if location:
+            # Clean the location input - take just the city name before any comma
+            location_cleaned = location.split(",")[0].strip().lower()
+            location_term = f"%{location_cleaned}%"
+
             location_filter = or_(
-                func.lower(Listing.location["city"].as_string()).like(
-                    f"%{location.lower()}%"
-                ),
-                func.lower(Listing.location["state"].as_string()).like(
-                    f"%{location.lower()}%"
-                ),
-                func.lower(Listing.location["country"].as_string()).like(
-                    f"%{location.lower()}%"
+                func.lower(Listing.location["city"].as_string()).like(location_term),
+                func.lower(Listing.location["state"].as_string()).like(location_term),
+                func.lower(Listing.location["country"].as_string()).like(location_term),
+                func.lower(Listing.location["formatted_address"].as_string()).like(
+                    location_term
                 ),
             )
             query = query.filter(location_filter)
+            print(f"📍 Location filter: Cleaned '{location}' to '{location_cleaned}'")
 
         if organic_only:
             query = query.filter(Listing.organic == True)
 
         # Get all listings first for distance calculation
         all_listings = query.all()
+        print(f"📋 Found {len(all_listings)} listings after database filters")
 
         # Apply location-based filtering if requested
         filtered_listings = all_listings
@@ -209,7 +222,7 @@ def get_listings(
                     )
 
                     if distance <= radius:
-                        listing.distance = distance  # Add distance for sorting
+                        listing.distance = distance
                         filtered_listings.append(listing)
 
         # Apply sorting
@@ -223,7 +236,6 @@ def get_listings(
                     key=lambda x: x.created_date, reverse=(sort_order == "desc")
                 )
             elif sort_by == "price":
-                # Handle None prices (give_away items)
                 filtered_listings.sort(
                     key=lambda x: x.price if x.price is not None else 0,
                     reverse=(sort_order == "desc"),
@@ -238,9 +250,11 @@ def get_listings(
         end = skip + limit
         paginated_listings = filtered_listings[start:end]
 
+        print(f"✅ Returning {len(paginated_listings)} listings to frontend")
         return paginated_listings
 
     except Exception as e:
+        print(f"❌ Error in get_listings: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch listings: {str(e)}"
         )
