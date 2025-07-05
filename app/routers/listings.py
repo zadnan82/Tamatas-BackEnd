@@ -168,13 +168,13 @@ def get_listings(
 
         if location:
             location_filter = or_(
-                func.lower(Listing.location["city"].astext).like(
+                func.lower(Listing.location["city"].as_string()).like(
                     f"%{location.lower()}%"
                 ),
-                func.lower(Listing.location["state"].astext).like(
+                func.lower(Listing.location["state"].as_string()).like(
                     f"%{location.lower()}%"
                 ),
-                func.lower(Listing.location["country"].astext).like(
+                func.lower(Listing.location["country"].as_string()).like(
                     f"%{location.lower()}%"
                 ),
             )
