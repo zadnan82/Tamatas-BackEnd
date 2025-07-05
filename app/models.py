@@ -194,6 +194,10 @@ class Review(Base):
     communication = Column(Integer, nullable=True)  # 1-5
     delivery = Column(Integer, nullable=True)  # 1-5
     created_date = Column(DateTime(timezone=True), server_default=func.now())
+    is_anonymous = Column(Boolean, default=False, nullable=False)  # NEW: Anonymous flag
+    show_reviewer = Column(
+        Boolean, default=True, nullable=False
+    )  # NEW: Visibility control
 
     # Relationships
     reviewer = relationship(
