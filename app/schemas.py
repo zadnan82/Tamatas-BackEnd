@@ -218,6 +218,15 @@ class Review(ReviewBase):
         orm_mode = True
 
 
+class ForumPostUpdate(BaseModel):
+    content: Optional[str] = None
+
+
+class ForumTopicUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+
 # Favorite Schemas (unchanged)
 class FavoriteCreate(BaseModel):
     listing_id: str
