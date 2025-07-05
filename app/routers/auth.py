@@ -1,4 +1,4 @@
-# UPDATE app/routers/auth.py - Add mandatory location during registration
+# app/routers/auth.py - FIXED VERSION with no duplicates
 
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,9 +20,9 @@ from app.location_utils import LocationService
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-@router.post("/register", response_model=UserSchema)
+@router.post("/register", response_model=Token)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
-    """Register new user with mandatory location"""
+    """Register new user with mandatory location and return access token"""
 
     # Check if user exists
     db_user = db.query(User).filter(User.email == user.email).first()
@@ -123,10 +123,18 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_user)
 
+        # ✅ Create access token and return it (like login does)
+        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+        access_token = create_access_token(
+            data={"sub": db_user.email}, expires_delta=access_token_expires
+        )
+
         print(
             f"✅ User registered with location: {db_user.email} in {location_data.get('city')}, {location_data.get('country')}"
         )
-        return db_user
+
+        # Return token response (same format as login)
+        return {"access_token": access_token, "token_type": "bearer"}
 
     except Exception as e:
         db.rollback()
@@ -213,4 +221,4 @@ async def validate_location(location_data: dict):
         }
 
 
-print(f"✅ Auth router configured with location validation")
+print(f"✅ Auth router configured with location validation and token response")
